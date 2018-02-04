@@ -382,6 +382,11 @@ dc1394_linux_capture_dequeue (platform_camera_t * craw,
     int cb;
     int result=-1;
 
+	if(craw->capture.frames==NULL || craw->capture_is_set==0) {
+		*frame=NULL;
+		return DC1394_CAPTURE_IS_NOT_SET;
+	}
+
     if ( (policy<DC1394_CAPTURE_POLICY_MIN) || (policy>DC1394_CAPTURE_POLICY_MAX) )
         return DC1394_INVALID_CAPTURE_POLICY;
 

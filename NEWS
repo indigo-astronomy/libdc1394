@@ -1,6 +1,9 @@
 Release information and news:
 -----------------------------
 
+-- 2.2.5
+   - Improve thread-safty of capture stop/dequeue functions.
+
 -- 2.2.4
    - Add USB IDs for some Point Grey cameras 
    - Re-activate the EdgeSense debayering algorithm (patent has expired)

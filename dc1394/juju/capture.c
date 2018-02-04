@@ -221,6 +221,8 @@ dc1394_juju_capture_setup(platform_camera_t *craw, uint32_t num_dma_buffers,
         }
     }
 
+	craw->packets_per_frame = proto.packets_per_frame; // HPK 20161209
+
     // starting from here we use the ISO channel so we set the flag in
     // the camera struct:
     craw->capture_is_set = 1;
@@ -311,9 +313,15 @@ dc1394_juju_capture_dequeue (platform_camera_t * craw,
     struct juju_frame *f;
     int err, len;
     struct fw_cdev_get_cycle_timer tm;
+
+	if(craw->frames==NULL || craw->capture_is_set==0) {
+		*frame_return=NULL;
+		return DC1394_CAPTURE_IS_NOT_SET;
+	}
+
     struct {
         struct fw_cdev_event_iso_interrupt i;
-        __u32 headers[craw->frames[0].frame.packets_per_frame*2 + 16];
+		__u32 headers[craw->packets_per_frame*2 + 16]; // HPK 20161209
     } iso;
 
     if ( (policy<DC1394_CAPTURE_POLICY_MIN) || (policy>DC1394_CAPTURE_POLICY_MAX) )

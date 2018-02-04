@@ -361,6 +361,7 @@ dc1394_windows_capture_stop(platform_camera_t *craw)
 
     craw->pFirstBuffer = craw->pLastBuffer = craw->pCurrentBuffer = NULL;
     free (craw->capture.frames);
+	craw->capture.frames=NULL;
 
     craw->capture_is_set = 0;
 
@@ -380,6 +381,11 @@ dc1394_windows_capture_dequeue (platform_camera_t * craw,
     // default: return NULL frame if no new frames/error/etc.
     *frame=NULL;
     
+	if(craw->capture.frames==NULL || craw->capture_is_set==0) {
+		*frame=NULL;
+		return DC1394_CAPTURE_IS_NOT_SET;
+	}
+
     switch (policy) {
     case DC1394_CAPTURE_POLICY_WAIT:
         ready=GetOverlappedResult(craw->device_acquisition, pOverlapped, &dwBytesRet, TRUE);

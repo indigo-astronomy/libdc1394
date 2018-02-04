@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "conversions.h"
 
@@ -775,7 +776,7 @@ dc1394_bayer_Downsample(const uint8_t *restrict bayer, uint8_t *restrict rgb, in
 {
 	uint8_t *outR, *outG, *outB;
 	register int i, j;
-	uint tmp;
+	int tmp;
 	int st=sx*sy;
 	int p;
 	int sx2=sx<<1;

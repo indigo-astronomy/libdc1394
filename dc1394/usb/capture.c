@@ -155,12 +155,12 @@ find_interface (libusb_device * usb_dev, uint8_t endpoint_address)
 }
 
 static dc1394error_t
-init_frame(platform_camera_t *craw, int index, dc1394video_frame_t *proto)
+init_frame(platform_camera_t *craw, int index, dc1394video_frame_t *proto, size_t padded_frame_size)
 {
     struct usb_frame *f = craw->frames + index;
 
     memcpy (&f->frame, proto, sizeof f->frame);
-    f->frame.image = craw->buffer + index * proto->total_bytes;
+    f->frame.image = craw->buffer + index * padded_frame_size;
     f->frame.id = index;
     f->transfer = libusb_alloc_transfer (0);
     f->pcam = craw;
@@ -197,7 +197,11 @@ dc1394_usb_capture_setup(platform_camera_t *craw, uint32_t num_dma_buffers,
         dc1394_usb_capture_stop (craw);
         return DC1394_FAILURE;
     }
-
+    size_t padded_frame_size = proto.total_bytes;
+    if (libusb_get_device_speed(libusb_get_device(craw->handle)) == LIBUSB_SPEED_SUPER) {
+        proto.total_bytes = proto.image_bytes;
+        padded_frame_size = (proto.total_bytes + 1023) & ~1023;
+    }
     if (pipe (craw->notify_pipe) < 0) {
         dc1394_usb_capture_stop (craw);
         return DC1394_FAILURE;
@@ -226,7 +230,7 @@ dc1394_usb_capture_setup(platform_camera_t *craw, uint32_t num_dma_buffers,
     craw->current = -1;
     craw->frames_ready = 0;
     craw->queue_broken = 0;
-    craw->buffer_size = proto.total_bytes * num_dma_buffers;
+    craw->buffer_size = padded_frame_size * num_dma_buffers;
     craw->buffer = malloc (craw->buffer_size);
     if (craw->buffer == NULL) {
         dc1394_usb_capture_stop (craw);
@@ -240,7 +244,7 @@ dc1394_usb_capture_setup(platform_camera_t *craw, uint32_t num_dma_buffers,
     }
 
     for (i = 0; i < num_dma_buffers; i++)
-        init_frame(craw, i, &proto);
+        init_frame(craw, i, &proto, padded_frame_size);
 
     if (libusb_init(&craw->thread_context) != 0) {
         dc1394_log_error ("usb: Failed to create thread USB context");
@@ -422,6 +426,11 @@ dc1394_usb_capture_dequeue (platform_camera_t * craw,
     if ((policy < DC1394_CAPTURE_POLICY_MIN)
             || (policy > DC1394_CAPTURE_POLICY_MAX))
         return DC1394_INVALID_CAPTURE_POLICY;
+
+	if(craw->buffer==NULL || craw->capture_is_set==0) {
+		*frame_return=NULL;
+		return DC1394_CAPTURE_IS_NOT_SET;
+	}
 
     /* default: return NULL in case of failures or lack of frames */
     *frame_return = NULL;

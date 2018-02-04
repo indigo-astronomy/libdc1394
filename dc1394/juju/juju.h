@@ -69,6 +69,7 @@ struct _platform_camera_t {
     int capture_is_set;
     int iso_auto_started;
     juju_iso_info *capture_iso_resource;
+	uint32_t packets_per_frame; // HPK 20161209
 };
 
 
