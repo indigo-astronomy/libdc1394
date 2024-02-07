@@ -321,7 +321,7 @@ dc1394_juju_capture_dequeue (platform_camera_t * craw,
 
     struct {
         struct fw_cdev_event_iso_interrupt i;
-		__u32 headers[craw->packets_per_frame*2 + 16]; // HPK 20161209
+        __u32 *headers;
     } iso;
 
     if ( (policy<DC1394_CAPTURE_POLICY_MIN) || (policy>DC1394_CAPTURE_POLICY_MAX) )
@@ -333,20 +333,25 @@ dc1394_juju_capture_dequeue (platform_camera_t * craw,
     fds[0].fd = craw->iso_fd;
     fds[0].events = POLLIN;
 
+    iso.headers = malloc(craw->packets_per_frame*2 + 16); // HPK 20161209
+
     while (1) {
         err = poll(fds, 1, (policy == DC1394_CAPTURE_POLICY_POLL) ? 0 : -1);
         if (err < 0) {
             if (errno == EINTR)
                 continue;
             dc1394_log_error("poll() failed for device %s.", craw->filename);
+            free(iso.headers);
             return DC1394_FAILURE;
         } else if (err == 0) {
+            free(iso.headers);
             return DC1394_SUCCESS;
         }
 
         len = read (craw->iso_fd, &iso, sizeof iso);
         if (len < 0) {
             dc1394_log_error("Juju: dequeue failed to read a response: %m");
+            free(iso.headers);
             return DC1394_FAILURE;
         }
 
@@ -393,6 +398,8 @@ dc1394_juju_capture_dequeue (platform_camera_t * craw,
     }
 
     *frame_return = &f->frame;
+
+    free(iso.headers);
 
     return DC1394_SUCCESS;
 }

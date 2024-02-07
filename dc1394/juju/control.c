@@ -283,7 +283,7 @@ juju_handle_event (platform_camera_t * cam)
     union {
         struct {
             struct fw_cdev_event_response r;
-            __u32 buffer[cam->max_response_quads];
+            __u32 *buffer;
         } response;
         struct fw_cdev_event_bus_reset reset;
         struct fw_cdev_event_iso_resource resource;
@@ -291,6 +291,8 @@ juju_handle_event (platform_camera_t * cam)
     int len, i;
     juju_response_info *resp_info;
     juju_iso_info *iso_info;
+
+    u.response.buffer = malloc(cam->max_response_quads);
 
     len = read (cam->fd, &u, sizeof u);
     if (len < 0) {
@@ -370,6 +372,8 @@ juju_handle_event (platform_camera_t * cam)
                 u.reset.type);
         break;
     }
+
+    free(u.response.buffer);
 
     return 0;
 }
